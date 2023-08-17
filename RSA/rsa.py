@@ -1,5 +1,6 @@
 from Crypto.Util.number import getPrime, inverse, GCD
 from Crypto.Random import get_random_bytes
+from Crypto.Hash import SHA256
 
 class RSA:
     def __init__(self, filename = None) -> None:
@@ -22,25 +23,36 @@ class RSA:
                 q = int(file.readline())
         
         #init base parameters
+        self.n = p * q
         v = (p-1)*(q-1)
         while GCD(self.e, v) > 1:
             self.e = getPrime(1024, randfunc=get_random_bytes)
         self.d = inverse(self.e, v)
 
         # init keys
-        self.public_key = tuple(self.n, self.e)
-        self.private_key = tuple(self.n, self.e)
+        self.public_key = tuple[self.n, self.e]
+        self.private_key = tuple[self.n, self.e]
 
+    def encrypt(self, open_text):
+        open_text_bytes = int.from_bytes(open_text, byteorder="big")
+        encrypted_text = pow(open_text_bytes, self.e, self.n)
+        return encrypted_text
 
-    
-    def encrypt():
-        pass
+    def decrypt(self, encrypted_text):
+        encrypted_text = pow(encrypted_text, self.d, self.n)
+        open_text = encrypted_text.to_bytes(32, byteorder="big")
+        return open_text
 
-    def decrypt():
-        pass
+    def form_sign(self, text):
+        hash = SHA256.new(text)
+        int_hash = int(hash.hexdigest(),16)
+        sign = pow(int_hash, self.d, self.n)
+        return sign
 
-    def form_sign():
-        pass
-
-    def check_sign():
-        pass
+    def check_sign(self, sign, text):
+        hash = SHA256.new(text)
+        checking_hash = pow(sign, self.e, self.n)
+        if hash == checking_hash:
+            print('Подпись принимается')
+        else:
+            print('Подпись неверна')
