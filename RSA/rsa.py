@@ -53,6 +53,6 @@ class RSA:
         hash = SHA256.new(text)
         checking_hash = pow(sign, self.e, self.n)
         if hash == checking_hash:
-            print('Подпись принимается')
+            print('РџРѕРґРїРёСЃСЊ РїСЂРёРЅРёРјР°РµС‚СЃСЏ')
         else:
-            print('Подпись неверна')
+            print('РџРѕРґРїРёСЃСЊ РЅРµРІРµСЂРЅР°')
