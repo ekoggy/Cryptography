@@ -13,9 +13,10 @@ aes_key = get_random_bytes(32)
 init_vector = get_random_bytes(16)
 
 
-def get_text():
+def get_text(filename = None):
 
-    filename = input("Enter the path to the file: ")
+    if filename == None:
+        filename = input("Enter the path to the file: ")
     text = b''
     with open(filename, "rb") as file:
         for line in file:
@@ -43,7 +44,7 @@ def encrypt_file(): # #
     text, filename = get_text()
     encrypted_text, open_key = encrypt_text(text)
     encrypted_key = encrypt_key(open_key)
-    asn_text = ASN.encrypt(b'\x00\x01',
+    asn_text = ASN.encrypt_rsa_cipher(b'\x00\x01',
                 b'Encoded file with RSA',
                 public_key[0],
                 public_key[1],
@@ -73,7 +74,7 @@ def decrypt_text(text, key):
 
 def decrypt_file():
     text, filename = get_text()
-    _, _, encrypted_key, encrypted_text = ASN.decrypt(text)
+    _, _, encrypted_key, encrypted_text = ASN.decrypt_rsa_cipher(text)
     open_key = decrypt_key(encrypted_key)
     open_text = decrypt_text(encrypted_text, open_key)
 
@@ -91,21 +92,18 @@ def form_sign(text):
 def create_signature():# ^
     text, filename = get_text()
     sign = form_sign(text)
-    asn_text = ASN.encrypt(b'\x00\x40',
+    asn_text = ASN.encrypt_rsa_eds(b'\x00\x40',
                 b'EDS with RSA',
                 public_key[0],
                 public_key[1],
-                encrypted_key,
-                b'\x10\x82',
-                len(encrypted_text),
-                encrypted_text)
-    with open("#" + filename, "wb") as enc:
+                sign)
+    with open("^" + filename, "wb") as enc:
         enc.write(asn_text)
 
 
 #------------------VERIFYING BLOCK($)------------------#
 def check_sign( sign, text):
-    hash = SHA256.new(text)
+    hash = int(SHA256.new(text).hexdigest(), 16)%public_key[0]
     checking_hash = pow(sign, public_key[1], public_key[0])
     if hash == checking_hash:
         print('Подпись принимается')
@@ -113,8 +111,10 @@ def check_sign( sign, text):
         print('Подпись неверна')
 
 def verify_signature():#
-    pass
-
+    text, filename = get_text()
+    sign_asn, _ = get_text('^' + filename)
+    _,_,sign = ASN.decrypt_rsa_eds(sign_asn)
+    check_sign(sign, text)
 
 #------------------VIEWING BLOCK------------------#
 def view_parameters():

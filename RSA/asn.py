@@ -2,7 +2,7 @@ from asn1 import Decoder, Encoder, Numbers
 
 class ASN:
     @staticmethod
-    def encrypt(id_key_algorithm,
+    def encrypt_rsa_cipher(id_key_algorithm,
                 string_key_id, 
                 n, 
                 e, 
@@ -38,7 +38,7 @@ class ASN:
         return asn1.output()
     
     @staticmethod
-    def decrypt(asn):
+    def decrypt_rsa_cipher(asn):
         asn1 = Decoder()
         asn1.start(asn)
         asn1.enter()  # Sequence
@@ -65,3 +65,53 @@ class ASN:
         _, text = asn1.read()  # шифртекст
 
         return n,e,key,text
+    
+    @staticmethod
+    def encrypt_rsa_eds(id_key_algorithm,
+                string_key_id, 
+                n, 
+                e, 
+                sign):
+        asn1 = Encoder()
+        asn1.start()
+        asn1.enter(Numbers.Sequence)
+        asn1.enter(Numbers.Set)
+        asn1.enter(Numbers.Sequence)
+        asn1.write(id_key_algorithm, Numbers.OctetString)  # Идентификатор алгоритма - SHA256
+        asn1.write(string_key_id, Numbers.UTF8String)  # Строковый идентификатор ключа, псевдоним
+        asn1.enter(Numbers.Sequence)  # Последовательность для открытого ключа
+        asn1.write(n, Numbers.Integer)  # n
+        asn1.write(e, Numbers.Integer)  # e
+        asn1.leave()
+        asn1.enter(Numbers.Sequence)  # Параметры алгоритма - Для RSA не используется
+        asn1.leave()
+        asn1.enter(Numbers.Sequence)  # подпись сообщения
+        asn1.write(sign, Numbers.Integer)
+        asn1.leave()
+        asn1.leave()
+        asn1.leave()
+        asn1.enter(Numbers.Sequence)  # дополнительных данных нет
+        asn1.leave()
+        asn1.leave()
+
+        return asn1.output()
+
+    @staticmethod
+    def decrypt_rsa_eds(asn):
+        asn1 = Decoder()
+        asn1.start(asn)
+        asn1.enter()  # Sequence
+        asn1.enter()  # Set
+        asn1.enter()  # Sequence
+        _, _ = asn1.read()  # Идентификатор алгоритма шифрования
+        _, _ = asn1.read()  # Строковый идентификатор ключа, псевдоним
+        asn1.enter()  # Последовательность для открытого ключа
+        _, n = asn1.read()  # n
+        _, e = asn1.read()  # e
+        asn1.leave()
+        asn1.enter()
+        asn1.leave()
+        asn1.enter()
+        _, sign = asn1.read()
+
+        return n, e, sign
