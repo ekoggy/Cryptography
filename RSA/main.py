@@ -11,6 +11,8 @@ public_key = (0, 0)
 private_key = (0, 0)
 aes_key = get_random_bytes(32) 
 init_vector = get_random_bytes(16)
+rsa_pq = (0, 0)
+        
 
 
 def get_text(filename = None):
@@ -118,13 +120,23 @@ def verify_signature():#
 
 #------------------VIEWING BLOCK------------------#
 def view_parameters():
-    pass
+    print('''In this start RSA cryptosystem using this patameters:''')
+    print(f'''
+p = {rsa_pq[0]}\n
+q = {rsa_pq[1]}\n
+n = {public_key[0]}\n
+e = {public_key[1]}\n
+d = {private_key[1]}\n
+                ''')
+
 
 
 def init_keys():
+    global rsa_pq
     # choosing p and q
     p = getPrime(1024, randfunc=get_random_bytes)
     q = getPrime(1024, randfunc=get_random_bytes)
+    rsa_pq = (p, q)
     e = 0
     #init base parameters
     n = p * q
