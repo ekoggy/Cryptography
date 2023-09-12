@@ -1,107 +1,174 @@
 import random as rnd
-from math import log2
+import math
+import time
 from Crypto.Util.number import getPrime, inverse, GCD
 from Crypto.Random import get_random_bytes
 
-# init keys
-public_key = (0, 0)
-private_key = (0, 0)
-aes_key = get_random_bytes(32) 
-init_vector = get_random_bytes(16)
-rsa_pq = (0, 0)
-        
+#--------FACTORIZATION BLOCK--------#
 
-def get_fraction(e, n, l):
+def factorization_attack(e_a, e_b, d_b, n):
+    
+    s = e_b * d_b - 1
+    while (s % 2 == 0):
+        s = s // 2
+    
+    while True: 
+        t = n-1
+        a = rnd.randrange(1, n)
+        b = pow(a, s, n)
+        x = b
+        y = 0
+        while True:
+            y = x #b^2^(l-1)
+            x = pow(x, 2, n)#b^2^l
+            if x == 1:
+                if y != -1:
+                    t = y
+                break
+        if t != n-1 and t != 1:
+            break
+    
+    p, q = GCD(t + 1, n), GCD(t - 1, n)
+    phi = (p-1)*(q-1)
+
+    d_a = inverse(e_a, phi)
+
+    return p, q, d_a
+
+def get_e_and_d(phi):
+    e = 0
+    while GCD(e, phi) > 1:
+        e = getPrime(1024, randfunc=get_random_bytes)
+    d = inverse(e, phi)
+    return e, d
+
+def get_first_program_param():
+    p = getPrime(1024, randfunc=get_random_bytes)
+    q = getPrime(1024, randfunc=get_random_bytes)
+    e_a = 0
+    e_b = 0
+    n = p * q
+    phi = (p-1)*(q-1)
+    e_a, d_a = get_e_and_d(phi)
+
+    while True:
+        e_b, d_b = get_e_and_d(phi)
+        if e_a != e_b and d_a != d_b:
+            break
+    return e_a, e_b, d_a, d_b, n
+
+def first_program():
+    e_a, e_b, d_a, d_b, n = get_first_program_param()
+
+    print(f' n = {n}\n\
+          e_a = {e_a}\n\
+          d_a = {d_a}\n\
+          e_b = {e_b}\n\
+          d_b = {d_b}')
+
+    p_predicted, q_predicted, d_a_predicted = factorization_attack(e_a, e_b, d_b, n)
+    print(f'\
+          Predicted:\n\
+          p by factorisation {p_predicted}\n\
+          q by factorisation {q_predicted}\n\
+          d_a by factorisation {d_a_predicted}')
+
+    if d_a_predicted == d_a:
+        print(f'Success')
+    else:
+        print(f'Failure')
+
+#--------WIENER BLOCK--------#
+
+def get_fraction(e, n):
 	a, q = divmod(e, n)
 	t = n
-	res = [a]
+	x = [a]
 
 	while q != 0:
 		next_t = q
 		a, q = divmod(t, q)
 		t = next_t
-		res.append(a)
+		x.append(a)
 
-	return res
-
-
-
-def factorization_attack(e_a, e_b, d_b, n):
-    
-    s = e_b * d_b - 1
-    k = 0
-    
-    while (s % 2 == 0):
-        k += 1
-        s = s // 2
-
-    while True:
-        a = rnd.randrange(1, n)
-        t = n
-        b = pow(a, s, n)
-
-        for i in range(n):
-            x, y = pow(b, 2^i, n), pow(b, 2^(i-1), n)
-            if x == 1:
-                if y != -1:
-                    t = y
-                break
-        if t != n:
-            break
-    
-    p, q = GCD(t + 1, n), GCD(t - 1, n)
-
-    phi = (p-1)(q-1)
-
-    d_a = inverse(e_a, phi)
-
-    return d_a
-
+	return x
 
 def wiener_attack(e, n):
-    l = log2(n)
-    a = get_fraction(e, n, l)
+    a = get_fraction(e, n)
+    l = len(a)
     q = [0, 1, 0]
-    m = pow(rnd.randrange(1, n), e, n)
+    m = rnd.randint(1, n-1) 
     d = -1
-    for i in range (2, l):
-        q[2] = a[i-1] * q[1] + q[0]
-        if pow(m, q[1], n) == m:
-            d = q[i]
+    for i in range (1, l):
+        q[2] = a[i] * q[1] + q[0]
+        if pow(m, e*q[2], n) == m:
+            d = q[2]
         q[0], q[1] = q[1], q[2]
     return d
 
+def second_program():
+
+    n = 159120802052440427821561598797245794196486762007282213614899538625298940765077913123669326518443057755809732511261424922103777938173006527628957265784605473595141601914607205620259694486382859683903964193688529214708416973894744745552398481940927574916829347154100077369737008945802414290266124801056303429283
+    e = 11344248856885807164295503665454231487754375121089537309789856526927258776275114297414196034298992736180410481299229993278201451840436370855751788204922795778488609359900203381710724197371026038017982542547796382021400514829497189707464973191055639707115355334522474997824622403851742433216683635618563112299
+    d = 23404895650626450554473888487065756508057288839850568254229721811842778880539
+
+    print(f'\
+        n = {n}\n\
+        e = {e}\n\
+        d = {d}')
+
+    d_predicted = wiener_attack(e, n)
+    print(f'Predicted d by wiener {d_predicted}')
+
+    if d == d_predicted:
+        print(f'Success')
+    else:
+        print(f'Failure')
+
+#--------KEYLESS DECRYPTION BLOCK--------#
 
 def keyless_decryption_attack(c, e, n):
     c_vector = [c, 0]
     for i in range(n):
         c_vector[1] = pow(c_vector[0], e, n)
+        print(c_vector[0])
         if c_vector[1] % n == c:
             m = c_vector[0]
+            break
         c_vector[0] = c_vector[1]
     return m
 
-
-
-def init_keys():
-    global rsa_pq
-    # choosing p and q
-    p = getPrime(1024, randfunc=get_random_bytes)
-    q = getPrime(1024, randfunc=get_random_bytes)
-    rsa_pq = (p, q)
+def third_program():
+    m = 156
+    p = getPrime(32, randfunc=get_random_bytes)
+    q = getPrime(32, randfunc=get_random_bytes)
     e = 0
     #init base parameters
     n = p * q
     v = (p-1)*(q-1)
     while GCD(e, v) > 1:
-        e = getPrime(1024, randfunc=get_random_bytes)
+        e = getPrime(32, randfunc=get_random_bytes)
     d = inverse(e, v)
 
-    return (n, e), (n, d)
+    c = pow(m, e, n)
+
+    print(f'\
+        n = {n}\n\
+        e = {e}\n\
+        d = {d}\n\
+        m = {m}\n\
+        c = {c}')
+    start = time.time()
+    m_predicted = keyless_decryption_attack(c, e, n)
+    end = time.time() - start
+    print(f'Predicted d by wiener {m_predicted}')
+    print(f'spended time = {end} seconds')
+    if m == m_predicted:
+        print(f'Success')
+    else:
+        print(f'Failure')
 
 def main():
-    global public_key, private_key
-    public_key, private_key = init_keys()
 
     while True:
         print('''
@@ -109,27 +176,20 @@ Warning: You will not be able to decrypt the file or verify
 the signature if the action was  not performed at the current start of the program.
               
 Available fighters:
-1. Harry Potter ()
-2. Tom Sawyer ()
-3. Optimus Prime ()
-4. Captain Nemo (verify signature)
-5. Albert Einstein (view parameters)
+1. Harry Potter (factorization)
+2. Tom Sawyer (wiener)
+3. Optimus Prime (keyless decryption)
 ''' )
         command = input("Choose your fighter: ")
 
-        if command == '1' or command == 'Robin Hood':
-            encrypt_file()
-        elif command == '2' or command == 'James Bond':
-            decrypt_file()
-        elif command == '3' or command == 'Spider-man':
-            create_signature()
-        elif command == '4' or command == 'Captain Nemo':
-            verify_signature()
-        elif command == '5' or command == 'Albert Einstein':
-            view_parameters()
+        if command == '1' or command == 'Harry Potter':
+            first_program()
+        elif command == '2' or command == 'Tom Sawyer':
+            second_program()
+        elif command == '3' or command == 'Optimus Prime':
+           third_program()
         else:
             print("incorrect input, try again")
-    
 
 if __name__ == '__main__':
     main()
