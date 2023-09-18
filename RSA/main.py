@@ -1,4 +1,3 @@
-from rsa import RSA
 from asn import ASN
 from Crypto.Cipher import AES
 from Crypto.Util.number import getPrime, inverse, GCD
