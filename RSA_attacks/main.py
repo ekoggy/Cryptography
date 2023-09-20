@@ -1,6 +1,7 @@
 import random as rnd
 import math
 import time
+from sympy import isprime, sqrt
 from Crypto.Util.number import getPrime, inverse, GCD
 from Crypto.Random import get_random_bytes
 
@@ -168,6 +169,37 @@ def third_program():
     else:
         print(f'Failure')
 
+#--------PARAMETERS GENERATOR-------#
+
+def gen_security_parameters():
+	# p и q - безопасные простые числа, z = 2*z1 + 1
+	while True:
+		p = getPrime(512, randfunc=get_random_bytes)
+		p_1 = (p - 1) // 2
+		if(isprime(p_1) == True):
+			break
+
+	while True:
+		q = getPrime(512 + 12, randfunc=get_random_bytes) # разница в 12 байт между p и q
+		q_1 = (q - 1) // 2
+		
+		if(isprime(q_1) == True):
+			break
+
+	n = p * q
+	v = (p - 1) * (q - 1)
+
+	while True:
+		e = 2
+		while (GCD(e, v) > 1):
+			e = getPrime(16, randfunc=get_random_bytes) # 16 байт, не слишком большое и не слишком маленькое
+		d = inverse(e, v)
+		if(d >= sqrt(sqrt(n))):
+			break
+
+	return n, e, d
+
+
 def main():
 
     while True:
@@ -188,6 +220,9 @@ Available fighters:
             second_program()
         elif command == '3' or command == 'Optimus Prime':
            third_program()
+        elif command == '4' or command == 'John Snow':
+            n, e, d = gen_security_parameters()
+            print(f'Generated parameters:\n{"*"*50}n = {n}\n{"*"*50}e = {e}\n{"*"*50}d = {d}')
         else:
             print("incorrect input, try again")
 
