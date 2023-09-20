@@ -117,9 +117,7 @@ class ASN:
         return n, e, sign
     
     @staticmethod
-    def encrypt_diffie_hellman(id_key_algorithm,
-                string_key_id,
-                c,
+    def encrypt_diffie_hellman(c,
                 mode = "server", 
                 p = 0, 
                 a = 0):
@@ -128,8 +126,8 @@ class ASN:
         asn1.enter(Numbers.Sequence) # Заголовок
         asn1.enter(Numbers.Set) # Множество ключей,1 задействован
         asn1.enter(Numbers.Sequence) # Первый ключ 
-        asn1.write(id_key_algorithm, Numbers.OctetString)  # Идентификатор алгоритма - Диффи-Хеллманн 0х0021
-        asn1.write(string_key_id, Numbers.UTF8String)  # Строковый идентификатор ключа, псевдоним  - 'dh'
+        asn1.write(b'\x00\x21', Numbers.OctetString)  # Идентификатор алгоритма - Диффи-Хеллманн 0х0021
+        asn1.write("DH", Numbers.UTF8String)  # Строковый идентификатор ключа, псевдоним  - 'dh'
         asn1.enter(Numbers.Sequence)  # значение открытого ключа, не используется
         asn1.leave()
         asn1.enter(Numbers.Sequence)  # параметры криптосистемы
@@ -152,28 +150,75 @@ class ASN:
     def decrypt_diffie_hellman(asn, mode = "server"):
         asn1 = Decoder()
         asn1.start(asn)
-        asn1.enter(Numbers.Sequence) # Заголовок
-        asn1.enter(Numbers.Set) # Множество ключей,1 задействован
-        asn1.enter(Numbers.Sequence) # Первый ключ 
+        asn1.enter() # Заголовок
+        asn1.enter() # Множество ключей,1 задействован
+        asn1.enter() # Первый ключ 
         _, _ = asn1.read()  # Идентификатор алгоритма - Диффи-Хеллманн 0х0021
         _, _ = asn1.read()  # Строковый идентификатор ключа, псевдоним  - 'dh'
         asn1.enter()  # значение открытого ключа, не используется
         asn1.leave()
-        asn1.enter(Numbers.Sequence)  # параметры криптосистемы
+        asn1.enter()  # параметры криптосистемы
         if mode == "client":
             _, p = asn1.read()  # простое число p
             _, a = asn1.read()  # образующая a 
         asn1.leave()
-        asn1.enter(Numbers.Sequence)  # шифртекст, показатель a^x
+        asn1.enter()  # шифртекст, показатель a^x
         _, c = asn1.read()  # простое число p
         asn1.leave()
         asn1.leave()
         asn1.leave()
-        asn1.enter(Numbers.Sequence)  # дополнительных данных нет
+        asn1.enter()  # дополнительных данных нет
         asn1.leave()
         asn1.leave()
 
         if mode == "client":
-            return p, a, c
+            return int(p), int(a), int(c)
         else:
-            return c
+            return int(c)
+        
+    @staticmethod
+    def encrypt_aes_diffie_hellman(data_len, text):
+        # работа с asn1
+        asn1 = Encoder()
+        asn1.start()
+        asn1.enter(Numbers.Sequence)
+        asn1.enter(Numbers.Set)
+        asn1.enter(Numbers.Sequence)
+        asn1.write(b'\x10\x82', Numbers.OctetString)
+        asn1.write(data_len, Numbers.Integer)
+        asn1.enter(Numbers.Sequence)
+        asn1.leave()
+        asn1.enter(Numbers.Sequence)
+        asn1.leave()
+        asn1.enter(Numbers.Sequence)
+        asn1.leave()
+        asn1.leave()
+        asn1.leave()
+        asn1.enter(Numbers.Sequence)
+        asn1.leave()
+        asn1.leave()
+        asn1.write(text)  # шифртекст
+        return asn1.output()
+    
+    @staticmethod
+    def decrypt_aes_diffie_hellman(asn):
+        asn1 = Decoder()
+        asn1.start(asn)
+        asn1.enter()
+        asn1.enter()
+        asn1.enter()
+        _, _ = asn1.read()
+        _, len = asn1.read()
+        asn1.enter()
+        asn1.leave()
+        asn1.enter()
+        asn1.leave()
+        asn1.enter()
+        asn1.leave()
+        asn1.leave()
+        asn1.leave()
+        asn1.enter()
+        asn1.leave()
+        asn1.leave()
+        _, text = asn1.read()
+        return text, len    
