@@ -178,7 +178,6 @@ def gen_security_parameters():
 		p_1 = (p - 1) // 2
 		if(isprime(p_1) == True):
 			break
-
 	while True:
 		q = getPrime(512 + 12, randfunc=get_random_bytes) # разница в 12 байт между p и q
 		q_1 = (q - 1) // 2
@@ -197,7 +196,7 @@ def gen_security_parameters():
 		if(d >= sqrt(sqrt(n))):
 			break
 
-	return n, e, d
+	return n, e, d, p, q
 
 
 def main():
@@ -211,6 +210,7 @@ Available fighters:
 1. Harry Potter (factorization)
 2. Tom Sawyer (wiener)
 3. Optimus Prime (keyless decryption)
+4. John Snow (generate parameters)
 ''' )
         command = input("Choose your fighter: ")
 
@@ -221,8 +221,13 @@ Available fighters:
         elif command == '3' or command == 'Optimus Prime':
            third_program()
         elif command == '4' or command == 'John Snow':
-            n, e, d = gen_security_parameters()
-            print(f'Generated parameters:\n{"*"*50}n = {n}\n{"*"*50}e = {e}\n{"*"*50}d = {d}')
+            n, e, d, p, q = gen_security_parameters()
+            print(f'Generated parameters:\n\
+{"*"*50}\nn = {n}\n\
+{"*"*50}\ne = {e}\n\
+{"*"*50}\nd = {d}\n\
+{"*"*50}\np = {p}\n\
+{"*"*50}\nq = {q}')
         else:
             print("incorrect input, try again")
 
