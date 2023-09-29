@@ -128,8 +128,6 @@ e = {public_key[1]}\n
 d = {private_key[1]}\n
                 ''')
 
-
-
 def init_keys():
     global rsa_pq
     # choosing p and q
