@@ -10,7 +10,7 @@ import numpy as np
 iterations = 0
 
 # Сложение точек на ЭК
-def get_points_sum(x1, y1, x2, y2, A, p, n):
+def get_points_sum(x1, y1, x2, y2, A, p):
 
     L = 0
 
@@ -25,13 +25,13 @@ def get_points_sum(x1, y1, x2, y2, A, p, n):
     # Если P = Q
     elif x1 == x2 and y1 == y2:
         d = GCD(p, 2 * y1)
-        if(d > 1 and d < n):
+        if(d > 1 and d < p):
             return x2, y2, d
         L = ((3 * (x1**2) + A) * inverse(2 * y1, p)) % p
     # Если P != Q
     else:
         d = GCD(p, x2 - x1)
-        if(d > 1 and d < n):
+        if(d > 1 and d < p):
             return x2, y2, d
         L = ((y2 - y1) * inverse((x2 - x1), p)) % p
 
@@ -145,6 +145,7 @@ def get_multipliers(number, base):
        number //= d
        divisors.append(d)
     divisors.append(number)
+    return divisors
 
 def main():
     while(True):
@@ -152,7 +153,7 @@ def main():
         m = int(input('Enter the arena number (base):'))
         
         start = time.perf_counter()
-        divisors, iterations = get_multipliers(n, m)
+        divisors = get_multipliers(n, m)
         stop = time.perf_counter()
         
         print(f'Achievements received (prime divisors): {divisors}\n\
